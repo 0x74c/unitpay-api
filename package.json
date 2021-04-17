@@ -11,12 +11,13 @@
     "test": "mocha -r ts-node/register src/**/*.spec.ts"
   },
   "keywords": [
-    "unitpay"
+    "unitpay",
+    "merchant"
   ],
   "homepage": "https://github.com/redinggg/unitpay-api#readme",
   "bugs": {
     "url": "https://github.com/redinggg/unitpay-api/issues",
-    "email": "r@reding.ru"
+    "email": "ya.metin-4@ya.ru"
   },
   "author": {
     "name": "Novokshchenov Roman",
