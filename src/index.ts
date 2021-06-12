@@ -177,6 +177,18 @@ export interface IFormParams {
   signature?: string
 }
 
+export interface IGetPartnerResponse {
+  email: string
+  balance: number
+  balance_payout: number
+  unitwallet?: {
+    rest_balance: number
+    rest_payouts: number
+    rest_ecommerce_payouts_today: number
+    rest_ecommerce_payouts_month: number
+  }
+}
+
 export default class Unitpay {
   public readonly supportedUnitpayIp = [
     '31.186.100.49',
@@ -250,7 +262,7 @@ export default class Unitpay {
     return this.send('offsetAdvance', body)
   }
 
-  public getPartner(body: ICommonPartnerRequest): Promise<IResponse<ICommonResponse>> {
+  public getPartner(body: ICommonPartnerRequest): Promise<IResponse<IGetPartnerResponse>> {
     return this.send('getPartner', body)
   }
 
