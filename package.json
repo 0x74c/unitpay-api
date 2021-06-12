@@ -1,6 +1,6 @@
 {
   "name": "unitpay-api",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "UnitPay API wrapper for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,9 @@
   },
   "keywords": [
     "unitpay",
-    "merchant"
+    "merchant",
+    "payment processing",
+    "payment service"
   ],
   "homepage": "https://github.com/redinggg/unitpay-api#readme",
   "bugs": {
