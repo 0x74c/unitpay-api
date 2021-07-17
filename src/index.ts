@@ -8,11 +8,11 @@ export interface IConfig {
   secretKey: string
 }
 
-type TPaymentStatus = 'success' | 'wait' | 'error' | 'error_pay' | 'error_check' | 'refund' | 'secure'
+export type TPaymentStatus = 'success' | 'wait' | 'error' | 'error_pay' | 'error_check' | 'refund' | 'secure'
 
-type TPaymentCode = 'mc' | 'card' | 'webmoney' | 'webmoneyWmr' | 'yandex' | 'qiwi' | 'paypal' | 'applepay' | 'samsungpay' | 'googlepay'
+export type TPaymentCode = 'mc' | 'card' | 'webmoney' | 'webmoneyWmr' | 'yandex' | 'qiwi' | 'paypal' | 'applepay' | 'samsungpay' | 'googlepay'
 
-type IOperatorCode = 'mts' | 'mf' | 'beeline' | 'tele2'
+export type IOperatorCode = 'mts' | 'mf' | 'beeline' | 'tele2'
 
 export interface ICommonResponse {
   message: string
@@ -60,7 +60,7 @@ export interface IInitPaymentRequest {
 }
 
 export interface IInitPaymentResponse {
-  type: string
+  type: 'redirect' | 'response' | 'invoice'
   message: string
   paymentId: number
   receiptUrl: string
