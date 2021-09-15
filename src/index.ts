@@ -53,10 +53,24 @@ export interface IInitPaymentRequest {
   preauth?: boolean
   operator?: IOperatorCode
   resultUrl?: string
+  cashItems?: ICashItem[] | string
   signature?: string
   subscription?: boolean
+  customerEmail?: string
+  customerPhone?: number
   subscriptionId?: number
   preauthExpireLogic?: number
+}
+
+export interface ICashItem {
+  name: string
+  count: number
+  price: number
+  nds?: 'node' | 'vat0' | 'vat10' | 'vat20'
+  type?: 'commodity' | 'excise' | 'job' | 'service' | 'lottery_prize' | 'intellectual_activity' | 'agent_commission' | 'another' | 'property_right' | 'non-operating_gain' | 'insurance_premium' | 'sales_tax' | 'resort_fee'
+  currency?: string
+  paymentMethod?: TRefundPaymentMethod
+  nomenclatureCode?: string
 }
 
 export interface IInitPaymentResponse {
@@ -74,6 +88,9 @@ export type TRefundPaymentMethod = 'full_prepayment' | 'prepayment' | 'advance' 
 export interface IRefundPaymentRequest {
   paymentId: number
   sum?: number
+  cashItems?: ICashItem[] | string
+  customerEmail?: string
+  customerPhone?: number
   paymentMethod?: TRefundPaymentMethod
 }
 
@@ -102,7 +119,7 @@ export interface IGetSubscriptionRequest{
 export interface IOffsetAdvanceRequest {
   login: string
   paymentId: string
-  cashItems?: string
+  cashItems?: ICashItem[] | string
 }
 
 export interface ICommonPartnerRequest {
@@ -217,6 +234,9 @@ export default class Unitpay {
       const signature = generateSignature(body, this.config.secretKey)
       body.signature = signature
     }
+    if (body.cashItems && typeof body.cashItems !== 'string') {
+      body.cashItems = base64Encode(JSON.stringify(body.cashItems))
+    }
     return this.send('initPayment', body)
   }
 
@@ -243,6 +263,9 @@ export default class Unitpay {
   }
 
   public refundPayment(body: IRefundPaymentRequest): Promise<IResponse<ICommonResponse>> {
+    if (body.cashItems && typeof body.cashItems !== 'string') {
+      body.cashItems = base64Encode(JSON.stringify(body.cashItems))
+    }
     return this.send('refundPayment', body)
   }
 
@@ -259,6 +282,9 @@ export default class Unitpay {
   }
 
   public offsetAdvance(body: IOffsetAdvanceRequest): Promise<IResponse<ICommonResponse>> {
+    if (body.cashItems && typeof body.cashItems !== 'string') {
+      body.cashItems = base64Encode(JSON.stringify(body.cashItems))
+    }
     return this.send('offsetAdvance', body)
   }
 

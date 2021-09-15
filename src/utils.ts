@@ -11,3 +11,10 @@ export const generateSignature = (params: any, secretKey: string) =>  {
     .update(paramsToString, 'utf-8')
     .digest('hex')
 }
+
+export const base64Encode = (data: string) => {
+  const buff = Buffer.from(data)
+  const base64data = buff.toString('base64')
+
+  return base64data
+}
