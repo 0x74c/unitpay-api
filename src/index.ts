@@ -1,7 +1,7 @@
 import { stringify } from 'qs'
 
 import UnitpayRequest, { IResponse } from './request'
-import { generateSignature } from './utils'
+import { base64Encode, generateSignature } from './utils'
 
 export interface IConfig {
   domain?: string
@@ -10,7 +10,7 @@ export interface IConfig {
 
 export type TPaymentStatus = 'success' | 'wait' | 'error' | 'error_pay' | 'error_check' | 'refund' | 'secure'
 
-export type TPaymentCode = 'mc' | 'card' | 'webmoney' | 'webmoneyWmr' | 'yandex' | 'qiwi' | 'paypal' | 'applepay' | 'samsungpay' | 'googlepay'
+export type TPaymentCode = 'mc' | 'card' | 'webmoney' | 'webmoneyWmr' | 'yandex' | 'qiwi' | 'paypal' | 'applepay' | 'samsungpay' | 'googlepay' | 'yandexpay'
 
 export type IOperatorCode = 'mts' | 'mf' | 'beeline' | 'tele2'
 
