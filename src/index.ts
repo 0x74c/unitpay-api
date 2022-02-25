@@ -277,15 +277,13 @@ export default class Unitpay {
 
   public form(publicKey: string, params: IFormParams): string {
     if (!publicKey) throw new Error('publicKey mismatch');
-
     if (params.cashItems && typeof params.cashItems !== 'string') {
       params.cashItems = base64Encode(JSON.stringify(params.cashItems));
     }
-
-    const signature = generateSignature(params, this.config.secretKey);
-    params.signature = signature;
-
-    return `https://${this.config.domain}/pay/${publicKey}?${stringify(params)}`;
+    const sortParams = Object.fromEntries(Object.entries(params).sort());
+    const signature = generateSignature(sortParams, this.config.secretKey);
+    sortParams.signature = signature;
+    return `https://${this.config.domain}/pay/${publicKey}?${stringify(sortParams)}`;
   }
 
   public confirmPayment(body: IGetPaymentRequest): Promise<IResponse<ICommonResponse>> {
