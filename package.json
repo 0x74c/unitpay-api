@@ -1,5 +1,5 @@
 {
-  "name": "unitpay-api",
+  "name": "@kolserdav/unitpay-api",
   "version": "3.0.4",
   "description": "UnitPay API wrapper for Node.js",
   "main": "dist/index.js",
