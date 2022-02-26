@@ -23,6 +23,14 @@
     chalk "^2.0.0"
     js-tokens "^4.0.0"
 
+"@kolserdav/unitpay-api@^3.0.4":
+  version "3.0.4"
+  resolved "https://registry.yarnpkg.com/@kolserdav/unitpay-api/-/unitpay-api-3.0.4.tgz#ed21ef8581458b4ab47cb8fd9e281b48e69ddc88"
+  integrity sha512-7Czs1b/aoqFs4FqLlAk8k8Mx+hbUK0coNdPz02FA1KJS82bbngWUFfw1V7KNHeWhghbGzwdmVhjRARqLMropow==
+  dependencies:
+    got "^11.8.2"
+    qs "^6.10.1"
+
 "@sindresorhus/is@^4.0.0":
   version "4.4.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-4.4.0.tgz#e277e5bdbdf7cb1e20d320f02f5e2ed113cd3185"
