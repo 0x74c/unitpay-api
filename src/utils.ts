@@ -1,20 +1,41 @@
-import crypto from 'crypto'
+import crypto from 'node:crypto'
+import { Buffer } from 'node:buffer'
+import { Payload } from './index.js'
 
-export const generateSignature = (params: any, secretKey: string) =>  {
-  const sortParams = Object.fromEntries(
-    Object.entries(params).sort()
-  )
-  const paramsToString: string = `${Object.values(sortParams).join('{up}')}{up}${secretKey}`
+export function parametersToString(parameters: Payload): string {
+	const parametersArray = []
+	const keys = Object.keys(parameters).sort()
 
-  return crypto
-    .createHash('sha256')
-    .update(paramsToString, 'utf-8')
-    .digest('hex')
+	for (const key of keys) {
+		let value = parameters[key] as string | Record<string, unknown>
+
+		if (key === 'signature') {
+			continue
+		}
+
+		if (value === null || value === undefined) {
+			continue
+		}
+
+		if (typeof value === 'object' && value !== null) {
+			value = parametersToString(value)
+		}
+
+		parametersArray.push(value)
+	}
+
+	return parametersArray.join('{up}')
 }
 
-export const base64Encode = (data: string) => {
-  const buff = Buffer.from(data)
-  const base64data = buff.toString('base64')
+export function getSignature(parameters: Payload, secretKey: string): string {
+	const signatureString = `${parametersToString(parameters)}{up}${secretKey}`
 
-  return base64data
+	return crypto.createHash('sha256').update(signatureString, 'utf-8').digest('hex')
+}
+
+export function base64Encode(body: Payload): string {
+	const buff = Buffer.from(JSON.stringify(body))
+	const base64data = buff.toString('base64')
+
+	return base64data
 }

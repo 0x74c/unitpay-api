@@ -1,315 +1,477 @@
+import got, { Got } from 'got'
 import { stringify } from 'qs'
+import { base64Encode, getSignature } from './utils.js'
 
-import UnitpayRequest, { IResponse } from './request'
-import { base64Encode, generateSignature } from './utils'
-
-export interface IConfig {
-  domain?: string
-  secretKey: string
+export interface Config {
+	domain: string
+	secretKey: string
 }
 
-export type TPaymentStatus = 'success' | 'wait' | 'error' | 'error_pay' | 'error_check' | 'refund' | 'secure'
-
-export type TPaymentCode = 'mc' | 'card' | 'webmoney' | 'webmoneyWmr' | 'yandex' | 'qiwi' | 'paypal' | 'applepay' | 'samsungpay' | 'googlepay' | 'yandexpay'
-
-export type IOperatorCode = 'mts' | 'mf' | 'beeline' | 'tele2'
-
-export interface ICommonResponse {
-  message: string
+export interface GenericResponse<T> {
+	result?: T
+	error?: {
+		message: string
+		code?: number
+	}
 }
 
-export interface IGetPaymentRequest {
-  paymentId: number
+export type PaymentCode =
+	| 'mc'
+	| 'card'
+	| 'webmoney'
+	| 'webmoneyWmr'
+	| 'yandex'
+	| 'qiwi'
+	| 'paypal'
+	| 'applepay'
+	| 'samsungpay'
+	| 'googlepay'
+	| 'yandexpay'
+	| 'sbp'
+
+export type OperatorCode = 'mts' | 'mf' | 'beeline' | 'tele2'
+
+/** For more details and usage information see [docs](https://help.unitpay.ru/online-cash-register/types-for-online-cashbox)  */
+export type TypeReceipt =
+	| 'commodity'
+	| 'job'
+	| 'service'
+	| 'intellectual_activity'
+	| 'payment'
+	| 'agent_commission'
+	| 'payment_2'
+	| 'another'
+	| 'property_right'
+	| 'non-operating_gain'
+	| 'insurance_premium'
+	| 'sales_tax'
+	| 'resort_fee'
+	| 'deposit'
+	| 'expense'
+	| 'pension_insurance_ip'
+	| 'pension_insurance'
+	| 'medical_insurance_ip'
+	| 'medical_insurance'
+	| 'social_insurance'
+	| 'excise_without_mark'
+	| 'excise_mark'
+	| 'commodity_without_mark'
+	| 'commodity_mark'
+
+export type RefundPaymentMethod = 'full_payment' | 'full_prepayment' | 'prepayment' | 'advance'
+
+export type PaymentStatus =
+	| 'success'
+	| 'wait'
+	| 'error'
+	| 'error_pay'
+	| 'error_check'
+	| 'refund'
+	| 'secure'
+
+export interface PaymentNotification {
+	method: 'check' | 'pay' | 'preauth' | 'error' | 'refund'
+	params: {
+		date: string
+		profit: number
+		account: string
+		orderSum: number
+		payerSum: number
+		unitpayId: number
+		projectId: number
+		signature: string
+		paymentType: PaymentCode
+		orderCurrency: string
+		payerCurrency: string
+		'3ds'?: number
+		test?: number
+		phone?: number
+		operator?: OperatorCode
+		errorMessage?: string
+		subscriptionId?: number
+	}
 }
 
-export interface IGetPaymentResponse {
-  date: string
-  purse: string
-  profit: number
-  status: TPaymentStatus
-  account: string
-  payerSum: number
-  orderSum: number
-  paymentId: number
-  projectId: number
-  receiptUrl: string
-  paymentType: TPaymentCode
-  errorMessage: string
-  orderCurrency: string
-  payerCurrency: string
+export interface CashItem {
+	[key: string]: any
+	name: string
+	count: number
+	price: number
+	nds?: 'none' | 'vat0' | 'vat10' | 'vat20'
+	type?: TypeReceipt
+	currency?: string
+	paymentMethod?: RefundPaymentMethod
+	markCode?: string
+	quantity?: number
+	measure?: number
+	markQuantity?: Array<{
+		numerator: number
+		denominator: number
+	}>
 }
 
-export interface IInitPaymentRequest {
-  sum: number
-  desc: string
-  account: string
-  projectId: number
-  paymentType: TPaymentCode
-  ip?: string
-  local?: string
-  phone?: number
-  backUrl?: string
-  currency?: string
-  preauth?: boolean
-  operator?: IOperatorCode
-  resultUrl?: string
-  cashItems?: ICashItem[] | string
-  signature?: string
-  subscription?: boolean
-  customerEmail?: string
-  customerPhone?: number
-  subscriptionId?: number
-  preauthExpireLogic?: number
+export interface InitPaymentRequest {
+	[key: string]: any
+	ip: string
+	sum: number
+	desc: string
+	account: string
+	projectId: number
+	resultUrl: string
+	paymentType: PaymentCode
+	local?: string
+	phone?: number
+	backUrl?: string
+	currency?: string
+	operator?: OperatorCode
+	signature?: string
+	subscription?: boolean
+	subscriptionId?: number
+	/** Creating a payment with preauthorization */
+	preauth?: boolean
+	preauthExpireLogic?: number
+	/** Receipt formation */
+	cashItems?: CashItem[] | string
+	customerEmail?: string
+	customerPhone?: number
 }
 
-export interface ICashItem {
-  name: string
-  count: number
-  price: number
-  nds?: 'node' | 'vat0' | 'vat10' | 'vat20'
-  type?: 'commodity' | 'excise' | 'job' | 'service' | 'lottery_prize' | 'intellectual_activity' | 'agent_commission' | 'another' | 'property_right' | 'non-operating_gain' | 'insurance_premium' | 'sales_tax' | 'resort_fee'
-  currency?: string
-  paymentMethod?: TRefundPaymentMethod
-  nomenclatureCode?: string
+export interface FormPayment {
+	sum: number
+	desc: string
+	account: string
+	locale?: string
+	backUrl?: string
+	currency?: string
+	signature?: string
+	subscription?: boolean
+	/** Receipt formation */
+	cashItems?: CashItem[] | string
+	customerEmail?: string
+	customerPhone?: number
 }
 
-export interface IInitPaymentResponse {
-  type: 'redirect' | 'response' | 'invoice'
-  message: string
-  paymentId: number
-  receiptUrl: string
-  response?: string
-  invoiceId?: string
-  redirectUrl?: string
+export interface InitPaymentResponse {
+	type: 'redirect' | 'response' | 'invoice'
+	message: string
+	paymentId: number
+	receiptUrl: string
+	response?: string | Record<string, unknown>
+	invoiceId?: string
+	redirectUrl?: string
 }
 
-export type TRefundPaymentMethod = 'full_prepayment' | 'prepayment' | 'advance' | 'full_payment'
-
-export interface IRefundPaymentRequest {
-  paymentId: number
-  sum?: number
-  cashItems?: ICashItem[] | string
-  customerEmail?: string
-  customerPhone?: number
-  paymentMethod?: TRefundPaymentMethod
+export interface GetPaymentRequest {
+	[key: string]: any
+	paymentId: number
 }
 
-export interface IListSubscriptionsRequest {
-  projectId: number
+export interface RefundPaymentRequest {
+	[key: string]: any
+	paymentId: number
+	cashItems?: CashItem[] | string
 }
 
-export interface IListSubscriptionsResponse {
-  status: 'new' | 'active' | 'close',
-  totalSum: number
-  startDate: string
-  description: string
-  failPayments: number
-  lastPaymentId: number
-  lastUpdateDate: string
-  subscriptionId: number
-  successPayments: number
-  parentPaymentId: number
-  closeType?: 'api' | 'error' | 'abuse'
+export interface ConfirmPaymentRequest {
+	[key: string]: any
+	paymentId: number
 }
 
-export interface IGetSubscriptionRequest{
-  subscriptionId: number
+export interface CancelPaymentRequest {
+	[key: string]: any
+	paymentId: number
 }
 
-export interface IOffsetAdvanceRequest {
-  login: string
-  paymentId: string
-  cashItems?: ICashItem[] | string
+export interface ListSubscriptionsRequest {
+	[key: string]: any
+	projectId: number
 }
 
-export interface ICommonPartnerRequest {
-  login: string
+export interface ListSubscriptionsResponse {
+	status: 'new' | 'active' | 'close'
+	totalSum: number
+	startDate: string
+	description: string
+	failPayments: number
+	lastPaymentId: number
+	lastUpdateDate: string
+	subscriptionId: number
+	successPayments: number
+	parentPaymentId: number
+	closeType?: 'api' | 'error' | 'abuse'
 }
 
-export interface IGetCommissionsRequest extends ICommonPartnerRequest {
-  projectId: number
+export interface GetPaymentResponse {
+	date: string
+	purse: string
+	profit: number
+	status: PaymentStatus
+	account: string
+	payerSum: number
+	orderSum: number
+	paymentId: number
+	projectId: number
+	receiptUrl: string
+	paymentType: PaymentCode
+	errorMessage: string
+	orderCurrency: string
+	payerCurrency: string
 }
 
-export type IGetCommissionsResponse = {
-  [key in TPaymentCode]: number
+export interface BasicResponse {
+	message: string
 }
 
-export interface IGetCurrencyCoursesResponse {
-  in: {
-    [key: string]: number
-  }
-  out: {
-    [key: string]: number
-  }
+export interface GetSubscriptionRequest {
+	[key: string]: any
+	subscriptionId: number
 }
 
-export interface IGetBinInfoRequest extends ICommonPartnerRequest {
-  bin: string
+export interface CloseSubscriptionRequest {
+	[key: string]: any
+	subscriptionId: number
 }
 
-export interface IGetBinInfoResponse {
-  bin: string
-  bank: string
-  type: string
-  brand: string
-  bankUrl: string
-  category: string
-  bankPhone: string
-  countryCode: string
+export interface MassPaymentRequest {
+	[key: string]: any
+	sum: number
+	login: string
+	purse: string
+	paymentType: PaymentCode
+	transactionId: string
+	comment?: string
+	projectId?: number
 }
 
-export interface IMassPaymentRequest {
-  sum: number
-  login: string
-  purse: string
-  paymentType: TPaymentCode
-  transactionId: string
-  comment?: string
-  projectId?: number
+export interface MassPaymentResponse {
+	sum: number
+	status: 'success' | 'not_completed'
+	message: string
+	payoutId: number
+	createDate: string
+	completeDate: string
+	partnerBalance: number
+	payoutCommission: number
+	partnerCommission: number
 }
 
-export interface IMassPaymentResponse {
-  sum: number
-  status: 'success' | 'not_completed'
-  message: string
-  payoutId: number
-  createDate: string
-  completeDate: string
-  partnerBalance: number
-  payoutCommission: number
-  partnerCommission: number
+export interface MassPaymentStatusRequest {
+	[key: string]: any
+	login: string
+	transactionId: string
 }
 
-export interface IMassPaymentStatusRequest extends ICommonPartnerRequest {
-  transactionId: string
+export interface GetBinInfoRequest {
+	[key: string]: any
+	login: string
+	bin: number
 }
 
-export interface IFormParams {
-  sum: number
-  desc: string
-  account: string
-  locale?: string
-  backUrl?: string
-  currency?: string
-  signature?: string
+export interface GetBinInfoResponse {
+	bin: string
+	bank: string
+	type: string
+	brand: string
+	bankUrl: string
+	category: string
+	bankPhone: string
+	countryCode: string
 }
 
-export interface IGetPartnerResponse {
-  email: string
-  balance: number
-  balance_payout: number
-  unitwallet?: {
-    rest_balance: number
-    rest_payouts: number
-    rest_ecommerce_payouts_today: number
-    rest_ecommerce_payouts_month: number
-  }
+export interface OffsetAdvanceRequest {
+	[key: string]: any
+	login: string
+	paymentId: string
+	cashItems: CashItem[] | string
 }
+
+export interface GetPartnerRequest {
+	[key: string]: any
+	login: string
+}
+
+export interface GetPartnerResponse {
+	email: string
+	balance: number
+	balance_payout: number
+}
+
+export interface GetCommissionsRequest {
+	[key: string]: any
+	projectId: number
+	login: string
+}
+
+export type GetCommissionsResponse = Record<PaymentCode, number>
+
+export interface GetCurrencyCoursesRequest {
+	[key: string]: any
+	login: string
+}
+
+export interface GetCurrencyCoursesResponse {
+	in: Record<string, number>
+	out: Record<string, number>
+}
+
+export type Payload = Record<string, any>
 
 export default class Unitpay {
-  public readonly supportedUnitpayIp = [
-    '31.186.100.49',
-    '178.132.203.105',
-    '52.29.152.23',
-    '52.19.56.234'
-  ]
-  public request: UnitpayRequest
-  private config: IConfig
-  constructor({ domain = 'unitpay.money', secretKey }: IConfig) {
-    this.config = { domain, secretKey }
+	private readonly config: Config
+	private readonly got: Got
 
-    this.request = new UnitpayRequest(domain, secretKey)
-  }
+	constructor(config: Config) {
+		this.config = config
+		this.got = got.extend({
+			prefixUrl: `https://${this.config.domain}/api`,
+			responseType: 'json',
+		})
+	}
 
-  public send(method: string, body: any = {}): Promise<any> {
-    return this.request.send(method, body)
-  }
+	public async request<T>(method: string, payload: Payload = {}): Promise<GenericResponse<T>> {
+		if (!this.config.secretKey) {
+			throw new Error('secretKey mismatch')
+		}
 
-  public verifyIP(ip: string): boolean {
-    return this.supportedUnitpayIp.includes(ip)
-  }
+		const response = await this.got.get<GenericResponse<T>>({
+			searchParams: stringify({
+				method,
+				params: {
+					...payload,
+					secretKey: this.config.secretKey,
+				},
+			}),
+			resolveBodyOnly: true,
+		})
 
-  public initPayment(body: IInitPaymentRequest): Promise<IResponse<IInitPaymentResponse>> {
-    if(!body.signature) {
-      const signature = generateSignature(body, this.config.secretKey)
-      body.signature = signature
-    }
-    if (body.cashItems && typeof body.cashItems !== 'string') {
-      body.cashItems = base64Encode(JSON.stringify(body.cashItems))
-    }
-    return this.send('initPayment', body)
-  }
+		return response
+	}
 
-  public form(publicKey: string, params: IFormParams): string {
-    if(!publicKey) throw new Error('publicKey mismatch')
-    if(!params.signature) {
-      const signature = generateSignature(params, this.config.secretKey)
-      params.signature = signature
-    }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/create-payment) */
+	public async initPayment(
+		body: InitPaymentRequest,
+	): Promise<GenericResponse<InitPaymentResponse>> {
+		if (body.cashItems && typeof body.cashItems !== 'string') {
+			body.cashItems = base64Encode(body.cashItems)
+		}
 
-    return `https://${ this.config.domain }/pay/${publicKey}?${stringify(params)}`
-  }
+		if (!body.signature) {
+			const signature = getSignature(body, this.config.secretKey)
+			body.signature = signature
+		}
 
-  public confirmPayment(body: IGetPaymentRequest): Promise<IResponse<ICommonResponse>> {
-    return this.send('confirmPayment', body)
-  }
+		return this.request<InitPaymentResponse>('initPayment', body)
+	}
 
-  public cancelPayment(body: IGetPaymentRequest): Promise<IResponse<ICommonResponse>> {
-    return this.send('cancelPayment', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/create-payment-easy) */
+	public form(publicKey: string, parameters: FormPayment): string {
+		if (!publicKey) {
+			throw new Error('publicKey mismatch')
+		}
 
-  public getPayment(body: IGetPaymentRequest): Promise<IResponse<IGetPaymentResponse>> {
-    return this.send('getPayment', body)
-  }
+		if (parameters.cashItems && typeof parameters.cashItems !== 'string') {
+			parameters.cashItems = base64Encode(parameters.cashItems)
+		}
 
-  public refundPayment(body: IRefundPaymentRequest): Promise<IResponse<ICommonResponse>> {
-    if (body.cashItems && typeof body.cashItems !== 'string') {
-      body.cashItems = base64Encode(JSON.stringify(body.cashItems))
-    }
-    return this.send('refundPayment', body)
-  }
+		if (!parameters.signature) {
+			const signature = getSignature(parameters, this.config.secretKey)
+			parameters.signature = signature
+		}
 
-  public listSubscriptions(body: IListSubscriptionsRequest): Promise<IResponse<IListSubscriptionsResponse>> {
-    return this.send('listSubscriptions', body)
-  }
+		return `https://${this.config.domain}/pay/${publicKey}?${stringify(parameters)}`
+	}
 
-  public getSubscription(body: IGetSubscriptionRequest): Promise<IResponse<IListSubscriptionsResponse>> {
-    return this.send('getSubscription', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/payment-info) */
+	public async getPayment(body: GetPaymentRequest): Promise<GenericResponse<GetPaymentResponse>> {
+		return this.request<GetPaymentResponse>('getPayment', body)
+	}
 
-  public closeSubscription(body: IGetSubscriptionRequest): Promise<IResponse<ICommonResponse>> {
-    return this.send('closeSubscription', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/payment-refund) */
+	public async refundPayment(body: RefundPaymentRequest): Promise<GenericResponse<BasicResponse>> {
+		if (body.cashItems && typeof body.cashItems !== 'string') {
+			body.cashItems = base64Encode(body.cashItems)
+		}
 
-  public offsetAdvance(body: IOffsetAdvanceRequest): Promise<IResponse<ICommonResponse>> {
-    if (body.cashItems && typeof body.cashItems !== 'string') {
-      body.cashItems = base64Encode(JSON.stringify(body.cashItems))
-    }
-    return this.send('offsetAdvance', body)
-  }
+		return this.request<BasicResponse>('refundPayment', body)
+	}
 
-  public getPartner(body: ICommonPartnerRequest): Promise<IResponse<IGetPartnerResponse>> {
-    return this.send('getPartner', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/pre-authorization-payments) */
+	public async confirmPayment(
+		body: ConfirmPaymentRequest,
+	): Promise<GenericResponse<BasicResponse>> {
+		return this.request<BasicResponse>('confirmPayment', body)
+	}
 
-  public getCommissions(body: IGetCommissionsRequest): Promise<IResponse<IGetCommissionsResponse>> {
-    return this.send('getCommissions', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/pre-authorization-payments) */
+	public async cancelPayment(body: CancelPaymentRequest): Promise<GenericResponse<BasicResponse>> {
+		return this.request<BasicResponse>('cancelPayment', body)
+	}
 
-  public getCurrencyCourses(body: ICommonPartnerRequest): Promise<IResponse<IGetCurrencyCoursesResponse>> {
-    return this.send('getCurrencyCourses', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/recurring-payments/subscription-list) */
+	public async listSubscriptions(
+		body: ListSubscriptionsRequest,
+	): Promise<GenericResponse<ListSubscriptionsResponse>> {
+		return this.request<ListSubscriptionsResponse>('listSubscriptions', body)
+	}
 
-  public getBinInfo(body: IGetBinInfoRequest): Promise<IResponse<IGetBinInfoResponse>> {
-    return this.send('getBinInfo', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/recurring-payments/subscription-info) */
+	public async getSubscription(
+		body: GetSubscriptionRequest,
+	): Promise<GenericResponse<ListSubscriptionsResponse>> {
+		return this.request<ListSubscriptionsResponse>('getSubscription', body)
+	}
 
-  // для физ. лиц (unitpay.money)
-  public massPayment(body: IMassPaymentRequest): Promise<IResponse<IMassPaymentResponse>> {
-    return this.send('massPayment', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payments/recurring-payments/close-subscription) */
+	public async closeSubscription(
+		body: CloseSubscriptionRequest,
+	): Promise<GenericResponse<BasicResponse>> {
+		return this.request<BasicResponse>('closeSubscription', body)
+	}
 
-  public massPaymentStatus(body: IMassPaymentStatusRequest): Promise<IResponse<IMassPaymentResponse>> {
-    return this.send('massPaymentStatus', body)
-  }
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payouts/create_payout) */
+	public async massPayment(
+		body: MassPaymentStatusRequest,
+	): Promise<GenericResponse<MassPaymentResponse>> {
+		return this.request<MassPaymentResponse>('massPayment', body)
+	}
+
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payouts/payout_info) */
+	public async massPaymentStatus(
+		body: MassPaymentStatusRequest,
+	): Promise<GenericResponse<MassPaymentResponse>> {
+		return this.request<MassPaymentResponse>('massPaymentStatus', body)
+	}
+
+	/** For more details and usage information see [docs](https://help.unitpay.ru/payouts/bin_info) */
+	public async getBinInfo(body: GetBinInfoRequest): Promise<GenericResponse<GetBinInfoResponse>> {
+		return this.request<GetBinInfoResponse>('getBinInfo', body)
+	}
+
+	/** For more details and usage information see [docs](https://help.unitpay.ru/online-cash-register/advance_receipt) */
+	public async offsetAdvance(body: OffsetAdvanceRequest): Promise<GenericResponse<BasicResponse>> {
+		if (body.cashItems && typeof body.cashItems !== 'string') {
+			body.cashItems = base64Encode(body.cashItems)
+		}
+
+		return this.request<BasicResponse>('offsetAdvance', body)
+	}
+
+	/** For more details and usage information see [docs](https://help.unitpay.ru/unitpay-management/balance) */
+	public async getPartner(body: GetPartnerRequest): Promise<GenericResponse<GetPartnerResponse>> {
+		return this.request<GetPartnerResponse>('getPartner', body)
+	}
+
+	/** For more details and usage information see [docs](https://help.unitpay.ru/unitpay-management/commissions) */
+	public async getCommissions(
+		body: GetCommissionsRequest,
+	): Promise<GenericResponse<GetCommissionsResponse>> {
+		return this.request<GetCommissionsResponse>('getCommissions', body)
+	}
+
+	/** For more details and usage information see [docs](https://help.unitpay.ru/unitpay-management/conversion-rates) */
+	public async getCurrencyCourses(
+		body: GetCurrencyCoursesRequest,
+	): Promise<GenericResponse<GetCurrencyCoursesResponse>> {
+		return this.request<GetCurrencyCoursesResponse>('getCurrencyCourses', body)
+	}
 }

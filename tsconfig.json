@@ -1,21 +1,22 @@
-  
 {
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "commonjs",
-    "sourceMap": true,
-    "removeComments": true,
-    "outDir": "./dist",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "strictNullChecks": true,
-    "resolveJsonModule": true,
-    "declaration": true,
-  },
-  
-  "include": [
+	"compilerOptions": {
+		"outDir": ".build",
+		"target": "ESNext",
+		"module": "ESNext",
+		"lib": [
+			"ESNext"
+		],
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"moduleResolution": "node",
+		"incremental": true,
+		"strict": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"noUncheckedIndexedAccess": true,
+		"declaration": true
+	},
+	"include": [
 		"src/**/*.ts"
-  ]
+	]
 }
