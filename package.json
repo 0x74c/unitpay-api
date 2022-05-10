@@ -36,19 +36,18 @@
 		"payment processing",
 		"payment service"
 	],
-	"homepage": "https://github.com/redinggg/unitpay-api#readme",
+	"homepage": "https://github.com/lraarzdy/unitpay-api#readme",
 	"bugs": {
-		"url": "https://github.com/redinggg/unitpay-api/issues",
+		"url": "https://github.com/lraarzdy/unitpay-api/issues",
 		"email": "ya.metin-4@ya.ru"
 	},
 	"author": {
 		"name": "Novokshchenov Roman",
 		"email": "ya.metin-4@ya.ru",
-		"url": "https://reding.ru/"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/redinggg/unitpay-api"
+		"url": "https://github.com/lraarzdy/unitpay-api"
 	},
 	"license": "MIT",
 	"devDependencies": {
